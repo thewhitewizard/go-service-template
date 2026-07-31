@@ -38,8 +38,24 @@ test-race: ## Run tests with the data race detector (needs CGO + gcc/clang)
 vet: ## go vet
 	$(GO) vet ./...
 
+# Must stay identical to the version pinned in .github/workflows/ci.yml. A linter
+# release changes which findings it reports, so an older local binary yields a green
+# `make check` on code CI rejects — the divergence is silent and costs a round trip
+# every time. Bump both in the same commit.
+GOLANGCI_VERSION := v2.12.2
+
+.PHONY: lint-version
+lint-version: ## Check the local golangci-lint matches the version CI pins
+	@have="$$(golangci-lint --version 2>/dev/null | grep -oE 'version [0-9]+\.[0-9]+\.[0-9]+' | awk '{print "v"$$2}')"; \
+	if [ "$$have" != "$(GOLANGCI_VERSION)" ]; then \
+		echo "golangci-lint version mismatch: local $${have:-<not found>}, CI pins $(GOLANGCI_VERSION)."; \
+		echo "Install the pinned version, or change GOLANGCI_VERSION here AND in"; \
+		echo ".github/workflows/ci.yml — they must agree."; \
+		exit 1; \
+	fi
+
 .PHONY: lint
-lint: ## golangci-lint run
+lint: lint-version ## golangci-lint run
 	golangci-lint run ./...
 
 .PHONY: lint-fix

@@ -54,11 +54,22 @@ Use **Fiber v3**, and confine it — together with its transitive dependency `fa
 - The rule covers the whole `github.com/gofiber` namespace, not just the `fiber` module:
   covering only the top-level dependency would leave the boundary escapable through
   `gofiber/utils`.
-- `internal/arch/rules_test.go` is the negative test of the rule engine, so a typo in a
-  rule cannot stay green.
+- `internal/arch/rules_test.go` holds the negative tests of the rule engine, on cases
+  that MUST return false — so a wrong separator or an over-greedy prefix cannot stay
+  green.
+- `TestImportRulePrefixesAreRealModules` checks each rule's prefix against `go.mod`.
+  Without it a rule guarding a misspelled module matches nothing, finds no violation
+  and **passes vacuously** — the suite stays green while the boundary is wide open.
+  Testing the matcher does not catch this, and neither does sharing a constant between
+  rule and test: both sides then carry the same wrong value.
 
 ## Verification
 
-`go test ./internal/arch` fails as soon as a framework import appears outside the
-transport layer. Verify by adding an import of `github.com/gofiber/fiber/v3` to
-`internal/domain/errors.go`: the test must fail and name the rule.
+Two checks, and both must fail when broken:
+
+1. `go test ./internal/arch` fails as soon as a framework import appears outside the
+   transport layer. Verify by adding `_ "github.com/gofiber/fiber/v3"` to
+   `internal/domain/errors.go`: the test must fail and name the rule.
+2. It also fails when a rule can never fire. Verify by changing
+   `gofiberImportPrefix` to `"github.com/gofibre"`: `TestImportRulePrefixesAreRealModules`
+   must fail. Before that test existed, this typo left the whole suite green.

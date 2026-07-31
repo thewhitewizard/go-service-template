@@ -48,9 +48,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # PINNED, not `latest`. With `latest`, a new linter release makes CI fail on a
+      # commit that changed nothing, and — worse — a developer whose local binary is
+      # older gets a green `make check` on code CI rejects. Two versions of the same
+      # rule return two verdicts, and the one that blocks is the one nobody ran.
+      #
+      # Bump this deliberately, in a commit of its own, and tell the team to install
+      # the same version (it is documented in README.md).
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
           args: --timeout 5m
 
   # The image is part of the deliverable, so a broken Dockerfile must fail CI and

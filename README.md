@@ -58,7 +58,10 @@ Then, for each unit of work: `/plan-work` → implement → `/end-phase` → `/o
 
 - **Go 1.26**
 - **Docker** (for `make dev` and the image)
-- **golangci-lint** v2 (`make lint`)
+- **golangci-lint `v2.12.2`** — the exact version, not just "v2". CI pins the same one
+  in `.github/workflows/ci.yml`, and it has to stay in sync: linter releases change
+  which findings they report, so a developer on an older binary gets a green
+  `make check` on code CI rejects. Check yours with `make lint-version`.
 - **The `cc-skills-golang@samber` plugin** — required, not optional: without it the
   agents' `skills:` frontmatter resolves to nothing and their reviews are worth much less.
 

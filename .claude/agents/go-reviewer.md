@@ -53,6 +53,16 @@ Priority attention points:
   lint rule): it passes green without having verified anything. Demand a negative
   test of the primitive — a case that MUST fail — otherwise a typo in a rule stays
   green indefinitely.
+- **Rule that is *vacuously* true.** A stronger form of the above, and the one that
+  survives review most easily: a rule whose subject matches nothing finds no
+  violation, so it passes. An architecture rule guarding `github.com/gofibre` instead
+  of `github.com/gofiber`; a hook whose command substring never occurs; a lint
+  exclusion anchored on a path that does not exist. Testing the matching primitive
+  does not catch it, and neither does sharing a constant between rule and test —
+  both sides then use the same wrong value. Demand a check against an **independent
+  source of truth** that the rule's subject is real: `go.mod` for a module path, the
+  route table for a path, the filesystem for a directory. See
+  `TestImportRulePrefixesAreRealModules`.
 - **Resource created before its release is armed**: a constructor returning
   `(object, error)` where **both are non-nil**. If cleanup is only armed on the happy
   path, the resource leaks precisely when things go wrong. Arm the cleanup **before**

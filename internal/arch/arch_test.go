@@ -17,9 +17,31 @@ import (
 	"testing"
 )
 
-// prometheusImportPrefix is shared with the unit tests of the rule engine
-// (rules_test.go), which check that it does not catch a neighbouring module.
-const prometheusImportPrefix = "github.com/prometheus"
+// Import prefixes and layer directories, declared once and shared with the unit
+// tests of the rule engine (rules_test.go).
+//
+// Note what sharing them does NOT buy: it does not protect against a typo in a
+// prefix. Both the rule and the test would then use the same wrong value and stay
+// green — and a rule whose prefix matches nothing finds no violation, so it passes
+// vacuously while the boundary it claims to guard is wide open. That hole is closed
+// by TestImportRulePrefixesAreRealModules in rules_test.go, which checks each
+// prefix against the module list in go.mod.
+const (
+	gofiberImportPrefix    = "github.com/gofiber"
+	fasthttpImportPrefix   = "github.com/valyala/fasthttp"
+	prometheusImportPrefix = "github.com/prometheus"
+
+	dirInternal = "internal"
+)
+
+// Layer directories, relative to the module root. Not constants because
+// filepath.Join is a function call, and hardcoding a separator would break the
+// architecture test on Windows.
+var (
+	dirTransportHTTP = filepath.Join(dirInternal, "transport", "http")
+	dirObservability = filepath.Join(dirInternal, "observability")
+	dirDomain        = filepath.Join(dirInternal, "domain")
+)
 
 // importRule describes one architecture constraint: importPrefix may only appear
 // in files located under one of allowedDirs (relative to the module root).
@@ -44,10 +66,8 @@ var importRules = []importRule{
 		// The prefix covers the whole gofiber ecosystem (utils, schema, …), not
 		// just the fiber module itself.
 		name:         "FiberStaysInTransportLayer",
-		importPrefix: "github.com/gofiber",
-		allowedDirs: []string{
-			filepath.Join("internal", "transport", "http"),
-		},
+		importPrefix: gofiberImportPrefix,
+		allowedDirs:  []string{dirTransportHTTP},
 	},
 	{
 		// fasthttp is Fiber's transitive dependency: importing it directly would
@@ -55,10 +75,8 @@ var importRules = []importRule{
 		// layer that knows how to handle them. Covering only the top-level
 		// dependency of a framework leaves the boundary trivially escapable.
 		name:         "FasthttpStaysInTransportLayer",
-		importPrefix: "github.com/valyala/fasthttp",
-		allowedDirs: []string{
-			filepath.Join("internal", "transport", "http"),
-		},
+		importPrefix: fasthttpImportPrefix,
+		allowedDirs:  []string{dirTransportHTTP},
 	},
 	{
 		// ADR-0002: the metrics implementation lives in internal/observability,
@@ -68,9 +86,7 @@ var importRules = []importRule{
 		// coupling — the same lesson as fasthttp above.
 		name:         "PrometheusStaysInObservability",
 		importPrefix: prometheusImportPrefix,
-		allowedDirs: []string{
-			filepath.Join("internal", "observability"),
-		},
+		allowedDirs:  []string{dirObservability},
 	},
 }
 
