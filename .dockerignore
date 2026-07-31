@@ -1,0 +1,22 @@
+# Keep the build context small and free of anything that has no business in an
+# image layer. Everything listed here would otherwise be copied by `COPY . .`.
+
+.git
+.github
+.claude
+
+bin/
+dist/
+
+# Local env files: a build context is not a secret store, and anything copied
+# into a layer stays in the image even if a later layer deletes it.
+.env
+.env.*
+!.env.example
+
+# Docs and dev-only assets: they change often, and including them invalidates the
+# build cache for no reason.
+docs/
+deploy/
+docker-compose.yml
+*.md

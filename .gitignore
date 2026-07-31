@@ -1,0 +1,22 @@
+bin/
+dist/
+
+# Local configuration. .env.example is committed; the real file never is.
+.env
+.env.*
+!.env.example
+
+# Test and profiling output
+*.out
+coverage.*
+*.test
+*.prof
+
+# Editor and OS noise
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code local overrides: personal settings, never shared.
+.claude/settings.local.json
+CLAUDE.local.md

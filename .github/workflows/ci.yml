@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Drift guard: fails if go.mod/go.sum no longer match the real imports.
+      # Without it, a dependency added locally but never tidied breaks the build
+      # for the next person instead of for the one who introduced it.
+      - name: Check go.mod is tidy
+        run: go mod tidy -diff
+
+      - run: go build ./...
+
+      - run: go vet ./...
+
+      # -race, not plain go test: a data race is the failure mode that reproduces
+      # only in production, and only under load.
+      - name: Test with race detector
+        run: go test -race ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout 5m
+
+  # The image is part of the deliverable, so a broken Dockerfile must fail CI and
+  # not the deploy. Build only — no push: publishing is a release concern.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: service:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Pins the guarantee the Dockerfile claims. A base image swap that silently
+      # reverts to root would otherwise ship unnoticed.
+      - name: Assert the image does not run as root
+        run: |
+          user="$(docker image inspect service:ci --format '{{.Config.User}}')"
+          echo "image user: ${user:-<empty>}"
+          case "$user" in
+            ""|root|0|0:0) echo "::error::image runs as root"; exit 1 ;;
+          esac

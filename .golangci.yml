@@ -1,0 +1,153 @@
+version: "2"
+run:
+  concurrency: 4
+  timeout: 5m
+  # Tests are linted like the rest: a test is code that will be read, and the
+  # architecture rules apply to it too.
+  tests: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 50
+
+linters:
+  enable:
+    # correctness
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - errorlint
+    - nilerr
+    - forcetypeassert
+    - copyloopvar
+    - durationcheck
+    - reassign
+    # style
+    - gocritic
+    - revive
+    - wsl_v5
+    - whitespace
+    - godot
+    - dupword
+    - predeclared
+    - errname
+    - asciicheck
+    - misspell
+    # complexity
+    - gocyclo
+    - nestif
+    - funlen
+    - dupl
+    # performance
+    - perfsprint
+    - unconvert
+    - ineffassign
+    - goconst
+    # security & resources
+    - gosec
+    - bidichk
+    - bodyclose
+    - noctx
+    - containedctx
+    - fatcontext
+    - sqlclosecheck
+    - rowserrcheck
+    # logging
+    - sloglint
+    - loggercheck
+    # testing
+    - testifylint
+    - thelper
+    - usetesting
+    - paralleltest
+    # modernization & meta
+    - modernize
+    - exptostd
+    - intrange
+    - usestdlibvars
+    - exhaustive
+    - nolintlint
+
+  disable:
+    - lll
+    - prealloc
+    - wrapcheck
+    - err113
+    - mnd
+    - iface
+    - nakedret
+    - noinlineerr
+    - gocognit
+    - cyclop
+    - depguard
+    - goheader
+    - importas
+    - funcorder
+    - godoclint
+    - varnamelen
+    - exhaustruct
+    - gochecknoglobals
+    - gochecknoinits
+    - unparam
+    - makezero
+    - testpackage
+    - embeddedstructfieldcheck
+    - iotamixing
+    - unqueryvet
+    - recvcheck
+    - mirror
+    - protogetter
+    - spancheck
+    - zerologlint
+
+  exclusions:
+    paths:
+      - vendor$
+      - third_party$
+      - testutils$
+      - examples$
+      # Add generated code here with an ANCHORED regex, so a hand-written
+      # neighbour with a common prefix is not silently excluded too. For example,
+      # with sqlc: ^internal/store/db($|/)
+
+  settings:
+    dupl:
+      threshold: 100
+    errcheck:
+      # A type assertion whose ok is dropped panics on the unexpected case, and
+      # the panic surfaces far from the assumption that was wrong.
+      check-type-assertions: true
+    funlen:
+      lines: 120
+      statements: 80
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocyclo:
+      min-complexity: 13
+    nolintlint:
+      # A nolint without an explanation is an unreviewable exemption, and one
+      # without a linter name silences everything including future rules.
+      require-explanation: true
+      require-specific: true
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+
+formatters:
+  # Only the formatters listed under `enable` run; there is no `disable` block
+  # (unsupported by the golangci-lint v2.12+ schema).
+  enable:
+    - gofmt
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # Reached over the compose network, by service name.
+    url: http://prometheus:9090
+    isDefault: true
+    # A fixed uid, referenced by the provisioned dashboards. Letting Grafana
+    # generate one would break every dashboard panel on the next recreate.
+    uid: prometheus
+    jsonData:
+      # Must match scrape_interval in deploy/prometheus/prometheus.yml, otherwise
+      # Grafana's automatic $__rate_interval is computed from the wrong base and
+      # rate() queries return gaps.
+      timeInterval: 5s
+    editable: false

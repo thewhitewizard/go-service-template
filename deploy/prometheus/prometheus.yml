@@ -1,0 +1,19 @@
+global:
+  # 5s is a laptop setting: it makes a change visible in Grafana while you watch.
+  # Production values are usually 15-60s — a short interval multiplies both
+  # storage and the load the /metrics handler puts on the service.
+  scrape_interval: 5s
+  scrape_timeout: 3s
+
+scrape_configs:
+  - job_name: service
+    static_configs:
+      # "service" is the compose service name, resolved on the compose network.
+      - targets: ["service:8080"]
+        labels:
+          env: local
+    metrics_path: /metrics
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

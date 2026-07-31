@@ -1,0 +1,64 @@
+# Local development stack: the service, Prometheus scraping it, and Grafana
+# reading Prometheus. Everything is provisioned as code — no click-through setup
+# to reproduce on the next machine.
+#
+# Start it with `make dev`, tear it down with `make dev-down`.
+#
+# Host ports are overridable, because 3000 and 8080 are the two most commonly
+# occupied ports on a developer machine and a demo that dies on "port is already
+# allocated" is a bad demo. Override in .env or inline:
+#
+#   GRAFANA_PORT=3001 make dev
+#
+# Only the host side moves; the container ports and the scrape config are fixed,
+# so nothing inside the stack has to know.
+
+services:
+  service:
+    build:
+      context: .
+      args:
+        VERSION: dev
+    ports:
+      - "${SERVICE_PORT:-8080}:8080"
+    environment:
+      SERVICE_LISTEN_ADDR: ":8080"
+      SERVICE_LOG_LEVEL: "debug"
+    # No container healthcheck on purpose. The image is distroless: no shell, no
+    # curl, no wget, so a HEALTHCHECK would need a probe mode compiled into the
+    # binary itself. That is deliberate scope this template does not carry.
+    #
+    # It costs nothing in production: Kubernetes probes /healthz and /readyz over
+    # HTTP from the kubelet and never needs a binary inside the image. Only
+    # Compose's own healthcheck does.
+
+  prometheus:
+    image: prom/prometheus:v3.7.3@sha256:49214755b6153f90a597adcbff0252cc61069f8ab69ce8411285cd4a560e8038
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      # Short retention: this is a laptop, not a monitoring cluster.
+      - --storage.tsdb.retention.time=6h
+    depends_on:
+      - service
+
+  grafana:
+    image: grafana/grafana:12.4.1@sha256:e932bd6ed0e026595b08483cd0141e5103e1ab7ff8604839ff899b8dc54cabcb
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      # Anonymous admin access, on purpose: this file targets a laptop, and a
+      # login prompt in the middle of a demo is friction with no security value.
+      # Never reuse these settings on anything reachable from a network you do
+      # not control — there is no authentication at all here.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_USERS_DEFAULT_THEME: "dark"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
