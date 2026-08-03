@@ -1,6 +1,6 @@
 ---
 name: security-analyst
-description: Analyses the application security of a Go diff — secret leakage, authorization, denial-of-service surface, input validation — without modifying the code. Use it in the end-of-phase review panel.
+description: Analyses the application security of a Go diff — secret leakage, authorization, denial-of-service surface, input validation — without modifying the code. Use it in the /review panel.
 tools: Read, Grep, Glob, Bash, Skill, LSP
 model: opus
 skills:

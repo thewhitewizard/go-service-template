@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-07-31
-- **Phase**: 0 (template baseline)
+- **Slice**: 0 (template baseline)
 
 ## Context
 

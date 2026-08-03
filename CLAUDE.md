@@ -41,7 +41,7 @@
 - Every PR leaves `main` **compiling and green**: `make check` (vet + lint + test).
 - Every non-trivial architecture decision → an ADR in the same PR or just before.
 - **Codified rituals**: framing a need via `/plan-work` (in plan mode, before writing
-  code); review via `/end-phase`; opening a PR via `/open-pr` (never an ad-hoc
+  code); review via `/review`; opening a PR via `/open-pr` (never an ad-hoc
   `gh pr create`).
 
 ## Layering — non-negotiable
@@ -103,14 +103,14 @@ make rename MODULE_NEW=github.com/org/name   # rewrite the module path
 ## Skills & agents
 
 The `cc-skills-golang@samber` plugin provides ~45 Go skills — install it, otherwise the
-agents' `skills:` frontmatter resolves to nothing. Skills ↔ phases mapping:
-`docs/SPEC.md` §10.
+agents' `skills:` frontmatter resolves to nothing. The plugin's `golang-how-to`
+orchestrator picks the rest from the task at hand — there is no mapping to maintain.
 
 - **Framing, upstream**: `tech-lead` critiques a **plan** before the code exists (split,
   slice ordering, untracked structural decision, contradiction with an ADR or with the
   layering rules). Spawned by `/plan-work` and `/bootstrap-spec`.
 - **Writing**: `go-developer` (production code), `go-test-writer` (tests).
-- **Review, read-only** — the panel `/end-phase` spawns **in parallel**, with the
+- **Review, read-only** — the panel `/review` spawns **in parallel**, with the
   **strictest verdict** winning: `go-reviewer` (correctness, safety, concurrency,
   layering), `qa-engineer` (test discriminating power, Definition of done coverage),
   `security-analyst` (secrets, authorization, DoS surface), and `platform-engineer`
@@ -123,4 +123,5 @@ corresponding capability arrives.
 
 ## Project status
 
-**[TO BE DEFINED — run `/bootstrap-spec`]** Phase roadmap in `docs/SPEC.md` §6.
+**[TO BE DEFINED — run `/bootstrap-spec`]** The ordered slice list — one slice, one PR —
+is `docs/SPEC.md` §6.

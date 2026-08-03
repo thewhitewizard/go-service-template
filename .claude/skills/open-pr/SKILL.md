@@ -50,7 +50,7 @@ production/test ratio — far above 1:1 signals redundant cases rather than extr
 
 - a title that is itself a Conventional Commit;
 - a body containing: one or two sentences of context, a link to the relevant
-  `docs/SPEC.md` phase and to any governing ADR, a **"How to test"** section with the
+  `docs/SPEC.md` §6 entry and to any governing ADR, a **"How to test"** section with the
   actual commands, and the standard PR signature.
 
 ## 7. Hand back

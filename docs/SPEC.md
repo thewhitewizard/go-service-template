@@ -7,8 +7,8 @@
 > define. `/bootstrap-spec` interviews you and fills them.
 >
 > This file is not documentation for its own sake — three agents read it:
-> `qa-engineer` takes the *Definition of done* of the current phase from §6,
-> `/plan-work` locates the phase and its skill mapping in §10, and the ADR rule comes
+> `qa-engineer` checks a test establishes the *Definition of done* of the slice under
+> review, `/plan-work` locates that slice in §6 before splitting it, and the ADR rule comes
 > from §7. Leaving §6 vague disarms the review panel downstream.
 
 ---
@@ -50,7 +50,7 @@ Non-obvious decisions are recorded in `docs/adr/`. Accepted so far:
 
 **Backlog — [TO BE DEFINED — run `/bootstrap-spec`]**
 
-Declare here, with a target phase, the decisions your service will have to make before
+Declare here, with the §6 slice each one governs, the decisions your service must make before
 the code assumes an answer. Declaring is not deciding: an ADR is written with
 `## Decision` empty and becomes `Accepted` only when you fill it in.
 
@@ -108,39 +108,67 @@ no tree, because it is still believed.
 
 ---
 
-## 6. Phases
+## 6. Work
 
-Each phase must be **shippable end to end** and carry a **falsifiable** *Definition of
-done* — a criterion that would fail if the implementation were wrong. "The service works"
-is not one.
+**An ordered list of slices. One slice = one PR, ≤ 400 added lines of Go, tests included.**
 
-### Phase 0 — Template baseline (done)
+There is no intermediate grouping. A need becomes an ordered list of slices, and each
+slice becomes a pull request — nothing sits in between, because nothing in between decides
+anything.
 
-**Goal**: a service that starts, exposes its operational contract, and defends its own
-boundaries.
+Two rules per entry, and they are what the review agents downstream depend on:
 
-- Fiber server, env configuration validated at startup, graceful shutdown on
-  SIGINT/SIGTERM.
-- `/healthz` (liveness, depends on nothing), `/readyz` (readiness, one `handlers.Probe`
-  per dependency), `/metrics` (Prometheus).
-- `log/slog` JSON with a propagated request ID.
-- RED metrics with a bounded `route` label and explicit histogram buckets.
-- Architecture test with its negative test; lint; CI with three drift guards.
-- Multi-stage non-root image; local stack with Prometheus and Grafana.
+- **The title says what an outside caller can do**, not which layer is touched. Apply the
+  test: *what can a caller do once this is merged that they could not before?* "Nothing —
+  it enables the next one" means it is a layer, and it must be folded into the slice it
+  serves. A title named after a directory — *configuration*, *client*, *store*,
+  *middleware*, *the provider interface* — is the smell.
+- **The *Definition of done* is falsifiable**: a criterion that would fail if the
+  implementation were wrong. "The service works" or "the endpoint is implemented" are not.
+  `qa-engineer` reads this item and checks a test establishes it, so a vague one disarms
+  the review panel.
 
-**Definition of done** — satisfied, and each item is checked by something that runs:
+Entries here stay **coarse**: outcome, rough size, governing decision. The implementable
+detail — exact files, exact out-of-scope, refined estimate — is produced by `/plan-work`
+immediately before the slice is built. A slice specified today against a codebase that
+will have changed by then is specified wrong, and planning slice 12 now is waste.
+
+Keep only the next few slices specified. Anything further belongs under *Later*, as intent
+rather than plan.
+
+### Done
+
+**0. The service starts, exposes its operational contract, and defends its own boundaries**
+*(template baseline)*
+
+**Definition of done** — satisfied, and every item is checked by something that runs:
 `make check` green; `go test ./internal/arch` fails when a framework import is added to
-`internal/domain`; `TestMetricsRouteLabelIsBounded` fails when the route label stops going
-through the allowlist; `make dev` then `curl /healthz /readyz /metrics` all answer, the
-Prometheus target reads UP, and the provisioned Grafana dashboard shows a request rate.
+`internal/domain`; `TestImportRulePrefixesAreRealModules` fails when a rule's prefix is
+misspelled; `TestMetricsRouteLabelIsBounded` fails when the route label stops going through
+the allowlist; `TestDomainErrorsAreMappedToStatus` fails when the error handler is removed;
+`make dev` then `curl /healthz /readyz /metrics` all answer, the Prometheus target reads UP,
+and the provisioned Grafana dashboard shows a request rate.
 
-### Phase 1 — [TO BE DEFINED — run `/bootstrap-spec`]
+### Next
 
-**Goal**: …
+**[TO BE DEFINED — run `/bootstrap-spec`]**
 
-- …
+```markdown
+### 1. <what a caller can do that they could not before>
 
-**Definition of done**: …
+- **Size**: ~<n> lines of Go, tests included
+- **Definition of done**: <a criterion that would fail if the implementation were wrong>
+- **Governing decision**: ADR-000N (Accepted) | none
+```
+
+### Later — intent, not plan
+
+**[TO BE DEFINED — run `/bootstrap-spec`]**
+
+What the service is meant to grow into, one line each. No sizes, no *Definition of done*:
+those are written when the slice moves up to *Next*. This section exists so an idea can be
+recorded without being paid for now — and so `/plan-work` has somewhere to put an
+abstraction it declined to introduce early.
 
 ---
 
@@ -171,13 +199,17 @@ Prometheus target reads UP, and the provisioned Grafana dashboard shows a reques
 
 ---
 
-## 9. Milestones
+## 9. Service level objectives
 
-**[TO BE DEFINED — run `/bootstrap-spec`]**
+**[TO BE DEFINED — run `/bootstrap-spec`, or delete this section]**
 
-| Milestone | Scope | State reached |
-|---|---|---|
-| Baseline | Phase 0 | Service starts, operational contract exposed, boundaries tested |
+Targets the service is expected to meet in production — latency, availability, freshness of
+the data it serves. One line each, with the metric that measures it.
+
+Keep these **out of** the §6 *Definition of done* items. An SLO is a running-system property
+measured over a window; a *Definition of done* is something a test can fail on today.
+Conflating them produces a DoD that cannot fail for the reason it claims, which is how a
+review gate quietly stops gating.
 
 ---
 
@@ -203,7 +235,7 @@ the agents, otherwise their `skills:` frontmatter resolves to nothing:
 | `security-analyst` | Review: secrets, authorization, DoS surface | No |
 | `platform-engineer` | Review: image, CI, observability, config — when those paths change | No |
 
-The four review agents are spawned **in parallel** by `/end-phase`, and the **strictest
+The four review agents are spawned **in parallel** by `/review`, and the **strictest
 verdict wins**. Each has an exclusive remit declared in its own file, so the panel returns
 one finding per problem instead of four.
 
@@ -213,14 +245,16 @@ one finding per problem instead of four.
 |---|---|
 | `/bootstrap-spec` | Once per project |
 | `/plan-work` | Once per unit of work, in plan mode |
-| `/end-phase` | Once per slice, before the PR |
+| `/review` | Once per slice, before the PR |
 | `/open-pr` | Once per slice |
 
-### Skills ↔ phases mapping
+### Which Go skills load
 
-Fill this in as the phases are defined. Phase 0 used: `golang-code-style`,
-`golang-naming`, `golang-error-handling`, `golang-context`, `golang-testing`,
-`golang-stretchr-testify`, `golang-safety`.
+Nothing to maintain here. The plugin ships **`golang-how-to`**, an orchestrator that reads
+the task at hand and loads the relevant skills — a slice touching the HTTP client pulls
+`golang-context` and `golang-concurrency`, one touching authentication pulls
+`golang-security`. A hand-written mapping would duplicate that mechanism, do it worse
+because it cannot see the diff, and go stale the first time a slice is re-cut.
 
-- **Phase 1** — [TO BE DEFINED]
-- **Transverse** — `golang-safety`, `golang-modernize`, `golang-troubleshooting`
+Each agent preloads the two or three skills it always needs, in its own `skills:`
+frontmatter, and loads the rest on demand. That is the whole configuration.

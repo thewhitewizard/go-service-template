@@ -2,7 +2,7 @@
 
 - **Status**: Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
 - **Date**: YYYY-MM-DD
-- **Phase**: (project phase concerned)
+- **Slice**: (the `docs/SPEC.md` §6 entry this decision governs)
 
 ## Context
 

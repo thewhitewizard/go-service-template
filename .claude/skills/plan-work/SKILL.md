@@ -1,6 +1,6 @@
 ---
 name: plan-work
-description: Frames one unit of work — asks the questions the need leaves open, locates the SPEC phase, splits into slices of ≤ 400 lines with an out-of-scope section and a falsifiable Definition of done, drafts the ADR of any structural decision (Decision left empty), then has the plan critiqued by tech-lead. Run in plan mode, before writing code.
+description: Frames one unit of work — asks the questions the need leaves open, locates its entry in the SPEC slice list, splits into slices of ≤ 400 lines with an out-of-scope section and a falsifiable Definition of done, drafts the ADR of any structural decision (Decision left empty), then has the plan critiqued by tech-lead. Run in plan mode, before writing code.
 argument-hint: "<the need, in a sentence or two>"
 ---
 
@@ -47,25 +47,26 @@ anything skips the only step this skill adds over plain plan mode.
 
 ## ② Locate
 
-- Derive the **phase** from `docs/SPEC.md` §6, and take its *Definition of done*.
-- Take the **skills for that phase** from the mapping in §10 — they go into the
-  developer's brief.
+- Find the matching entry in the ordered slice list, `docs/SPEC.md` §6, and take its
+  *Definition of done*. For an ad-hoc need with no entry, say so — you will be adding one.
 - List the **existing ADRs** (`docs/adr/`) governing the area touched, **with their
   `Status`**. An ADR still `Proposed` blocks the slices that depend on it.
+- Read the actual files the work will touch. §6 entries are deliberately coarse; the
+  detail is yours to produce, and it has to be produced against the code as it is now.
 
 ## ③ Split
 
 One slice = **one PR of ≤ 400 added lines of Go, tests included**. Split by **vertical**
 functional slice (one endpoint and its tests, never a whole layer).
 
-### Re-cut the phase if its bullets are layers
+### Re-cut the §6 entry if it names a layer
 
-`docs/SPEC.md` §6 describes the work, but it is not a split you are bound by. If its
-bullets are named after layers — *configuration*, *client*, *store*, *middleware*, *the
-provider interface* — **re-cut them into outcomes and say that you did**, with one line
-on why. Inheriting the shape is how a layer gets split into sub-layers, and a slice of a
-layer is unreviewable: it has no observable behaviour to assert, so `qa-engineer` has
-nothing to check and the PR is 400 lines of plumbing nobody can validate.
+`docs/SPEC.md` §6 gives the outcome and a rough size, not a split you are bound by. If an
+entry is named after a layer — *configuration*, *client*, *store*, *middleware*, *the
+provider interface* — **re-cut it into outcomes and say that you did**, with one line on
+why. Inheriting the shape is how a layer gets split into sub-layers, and a slice of a layer
+is unreviewable: it has no observable behaviour to assert, so `qa-engineer` has nothing to
+check and the PR is 400 lines of plumbing nobody can validate.
 
 The test, per slice: **what can an outside caller do once this is merged that they could
 not before?** "Nothing, it enables the next slice" means it is not a slice.
@@ -77,10 +78,10 @@ Two consequences worth expecting:
   in exactly the configuration it needs and no more. If your estimate for a layer slice
   comes out far above the limit, that is usually the signal to re-cut, not to split
   further.
-- **Do not introduce an abstraction the phase does not yet need.** A registry, a list, an
-  interface for a single implementer — a configuration file for one configured thing.
-  Those belong to the phase that brings the second case. Naming them in the out-of-scope
-  section is how you record the intent without paying for it now.
+- **Do not introduce an abstraction no slice needs yet.** A registry, a list, an interface
+  for a single implementer — a configuration file for one configured thing. Those belong to
+  the slice that brings the second case. Name them in the out-of-scope section, and add a
+  line under §6 *Later*: the intent is recorded without being paid for now.
 
 A slice that genuinely cannot be vertical (a dependency bump, a migration with no
 user-visible effect) is allowed, but label it as such and never make it the first slice.
@@ -103,7 +104,6 @@ One section per slice:
 - **Out of scope**: <what this slice deliberately does NOT do>
 - **Definition of done**: <a criterion that would fail if the implementation were wrong>
 - **Governing ADR**: ADR-000N (Accepted) | ADR-000M (Proposed — must be decided first)
-- **Skills for this phase (§10)**: <list>
 ```
 
 Two requirements per slice:
@@ -140,7 +140,7 @@ a dependency outage, a responsibility boundary — record it properly.
 Draft it **in full, in the plan file**, from `docs/adr/0000-template.md`, with the next
 free number in `docs/adr/`:
 
-- `**Status**: Proposed`, `**Phase**` filled in.
+- `**Status**: Proposed`, and `**Slice**` set to the entry it governs.
 - `## Context`, `## Options considered`, `## Consequences`, `## Mitigations`,
   `## Verification` written.
 - Each option names **what is lost**, not only what is gained.
@@ -165,7 +165,7 @@ Spawn `tech-lead` (Agent tool, `subagent_type: tech-lead`), **one call**, in **m
 
 - the original need and the answers from step ①;
 - the drafted plan (slices, estimates, out-of-scope, DoD);
-- the phase concerned and the governing ADRs with their status.
+- the §6 entry concerned and the governing ADRs with their status.
 
 Wait for its verdict before handing back.
 
@@ -184,4 +184,4 @@ Then hand back for approval (`ExitPlanMode`).
 
 After approval, implement **one slice at a time**: brief `go-developer` with the plan
 file path and the slice number — including its out-of-scope section — then
-`go-test-writer`, then `/end-phase`, then `/open-pr`.
+`go-test-writer`, then `/review`, then `/open-pr`.

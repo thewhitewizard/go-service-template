@@ -33,8 +33,8 @@ Breaking one is a build failure, not a review comment.
 
 ## Method
 
-1. Read `CLAUDE.md` and `docs/SPEC.md` before touching anything: the phase you are
-   in determines which skills to load (see the mapping in `docs/SPEC.md` §10).
+1. Read `CLAUDE.md` and `docs/SPEC.md` before touching anything, and the slice brief you
+   were given: its out-of-scope section is as binding as its goal.
 2. Load extra skills on demand through the Skill tool as the work requires:
    `golang-concurrency`, `golang-context`, `golang-safety`,
    `golang-structs-interfaces`, `golang-design-patterns`, `golang-modernize`.

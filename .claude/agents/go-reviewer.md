@@ -1,6 +1,6 @@
 ---
 name: go-reviewer
-description: Reviews a Go diff (end of phase, or before a commit) for correctness, safety, concurrency and layering, without modifying the code. Use it for a read-only review pass on this service.
+description: Reviews a Go diff (before opening a PR, or before a commit) for correctness, safety, concurrency and layering, without modifying the code. Use it for a read-only review pass on this service.
 tools: Read, Grep, Glob, Bash, Skill, LSP
 model: opus
 skills:
@@ -26,7 +26,7 @@ authorization (`security-analyst`); image, CI, observability and configuration
 code exists (`tech-lead`).
 
 The checklist below is this project's institutional memory. It grows through the
-learning loop in `/end-phase`: when a finding belongs to a class already seen, it gets
+learning loop in `/review`: when a finding belongs to a class already seen, it gets
 proposed as a new entry here.
 
 Priority attention points:
@@ -112,7 +112,7 @@ Not active in this template.
 
 1. Read the diff (`git diff`, `git diff --staged`, or the changed files given in your
    brief).
-2. Consult `CLAUDE.md` and `docs/SPEC.md` for the conventions and the current phase.
+2. Consult `CLAUDE.md` for the conventions and `docs/SPEC.md` for the slice being built.
 3. For each problem, produce: **file:line**, the problem named precisely, the
    condition under which it breaks, and a concrete fix.
 4. Label each finding:

@@ -53,13 +53,14 @@ Without Docker: `make run`, then the same `curl`s.
    Both implementations end with the same post-condition: zero remaining occurrence of
    the old name, or they fail. A half-renamed repository is not a possible outcome.
 3. `/bootstrap-spec "what your service does"` — interviews you, then fills
-   `docs/SPEC.md` (context, phases with a falsifiable *Definition of done*, ADR backlog)
-   and rewrites the `CLAUDE.md` and README headers.
-4. Decide the drafted ADRs and set them to `Status: Accepted`. A phase whose governing ADR
+   `docs/SPEC.md`: the context, the declared decisions, and **§6, an ordered list of
+   slices — one slice, one PR**, each with a falsifiable *Definition of done*. There is no
+   phase or milestone in between: a need becomes a list, each entry becomes a PR.
+4. Decide the drafted ADRs and set them to `Status: Accepted`. A slice whose governing ADR
    is still `Proposed` is not implementable.
 5. `make check` — must be green before you write a line of your own.
 
-Then, for each unit of work: `/plan-work` → implement → `/end-phase` → `/open-pr`.
+Then, for each unit of work: `/plan-work` → implement → `/review` → `/open-pr`.
 
 ## Requirements
 
@@ -89,7 +90,7 @@ Then, for each unit of work: `/plan-work` → implement → `/end-phase` → `/o
                         drafts the ADR of any structural decision,
                         then tech-lead critiques the plan
 implement one slice      go-developer + go-test-writer
-/end-phase               panel of 4 agents in parallel, strictest verdict wins
+/review                  panel of 4 agents in parallel, strictest verdict wins
 /open-pr                 you review, you merge
     ↺ next slice
 ```
@@ -124,7 +125,7 @@ Its usefulness rests on an asymmetry: it did not write the plan.
 
 ### The learning loop
 
-`/end-phase` step 5 compares each finding against the checklist of the agent that raised
+`/review` step 5 compares each finding against the checklist of the agent that raised
 it, and against bug classes already fixed in git history. When a finding belongs to a class
 already seen, it proposes adding it to that agent's checklist — **with your explicit
 agreement**.
@@ -196,7 +197,7 @@ The agents' checklists carry entries that are inactive here, grouped under
   surface classification, quota reservation released on error.
 
 When you add the capability, move the relevant entries up into the main checklist of the
-agent concerned. `/end-phase` will suggest it too, the first time a finding of that class
+agent concerned. `/review` will suggest it too, the first time a finding of that class
 shows up.
 
 ## Layout

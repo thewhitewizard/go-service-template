@@ -1,6 +1,6 @@
 ---
 name: platform-engineer
-description: Reviews the infrastructure and operability changes in a diff — Dockerfile, compose, CI, observability, configuration, graceful shutdown — without modifying the code. Use it in the end-of-phase review panel when the diff touches those paths.
+description: Reviews the infrastructure and operability changes in a diff — Dockerfile, compose, CI, observability, configuration, graceful shutdown — without modifying the code. Use it in the /review panel when the diff touches those paths.
 tools: Read, Grep, Glob, Bash, Skill, LSP
 model: sonnet
 ---
@@ -95,7 +95,7 @@ capability is added.
 
 1. Read the diff (the command is in your brief) and identify which of your paths it
    touches.
-2. Consult `docs/SPEC.md` §5 (target tree) and the relevant phase, plus `Makefile`,
+2. Consult `docs/SPEC.md` §5 (target tree) and the slice being built, plus `Makefile`,
    `docker-compose.yml` and `.github/workflows/ci.yml` for the current state.
 3. For each problem, produce: **file:line**, the problem named precisely, **what breaks
    in operation** (at deploy time, under load, during a dependency outage), and the fix.

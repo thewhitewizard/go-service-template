@@ -1,6 +1,6 @@
 ---
 name: bootstrap-spec
-description: One-time project bootstrap — interviews you about the service, then fills docs/SPEC.md (context, phases with a falsifiable Definition of done, declared ADR backlog), drafts those ADRs with Decision left empty, and rewrites the CLAUDE.md and README headers. Run once on a fresh clone of the template, before any code.
+description: One-time project bootstrap — interviews you about the service, then fills docs/SPEC.md (context, an ordered list of PR-sized slices each with a falsifiable Definition of done, declared ADR backlog), drafts those ADRs with Decision left empty, and rewrites the CLAUDE.md and README headers. Run once on a fresh clone of the template, before any code.
 argument-hint: "<what the service does, in a sentence or two>"
 ---
 
@@ -35,7 +35,7 @@ Do not ask what the repository already answers.
 
 ## ② Interview
 
-**This is the main step.** Everything downstream — the phases, their *Definition of
+**This is the main step.** Everything downstream — the slice list, its *Definition of
 done*, the ADR backlog — is only as good as this conversation.
 
 Ask through `AskUserQuestion`, grouped, at most 4 per call. Cover:
@@ -44,7 +44,7 @@ Ask through `AskUserQuestion`, grouped, at most 4 per call. Cover:
   scheduled job, the public internet). The caller determines the authentication story
   and the denial-of-service surface.
 - **External dependencies**: database, cache, queue, third-party API, blockchain node.
-  Each one needs a `handlers.Probe` in `/readyz` and shows up in the phases.
+  Each one needs a `handlers.Probe` in `/readyz` and shows up in the slice list.
 - **The MVP**: the smallest version that is genuinely useful to a caller. Push back on
   an MVP that is a layer rather than a working slice.
 - **What must be true to run it in production**: throughput, latency, data durability,
@@ -58,53 +58,65 @@ case say so and propose an ADR that supersedes the existing one.
 ## ③ Draft `docs/SPEC.md`
 
 Fill only the sections the template left open: **§1** (context and goals), **§3**
-(declared ADR backlog), **§6** (phases), **§9** (milestones). Leave the others as
+(declared ADR backlog), **§6** (the ordered slice list), **§9** (SLOs). Leave the others as
 shipped, and say so.
 
-For §6, one section per phase:
+§6 is **an ordered list of slices — one slice, one PR**. There is no phase, no milestone,
+no grouping in between: a need becomes an ordered list, and each entry becomes a pull
+request. Nothing sits between them because nothing in between decides anything.
+
+One entry per slice, under *Next*:
 
 ```markdown
-### Phase 1 — <name> (≈ <duration>)
+### 1. <what a caller can do that they could not before>
 
-**Goal**: <one sentence: what becomes possible that was not>
-
-- <bullet of work>
-- <bullet of work>
-
-**Definition of done**: <a criterion that would FAIL if the implementation were wrong>
+- **Size**: ~<n> lines of Go, tests included
+- **Definition of done**: <a criterion that would FAIL if the implementation were wrong>
+- **Governing decision**: ADR-000N | none
 ```
 
-Three rules for the phases:
+Four rules:
 
-- **Phase 1 must be shippable end to end.** A first phase that delivers a layer rather
-  than a working slice cannot be validated by anything — so it cannot be wrong either,
-  which is the problem.
-- **Every *Definition of done* must be falsifiable.** "The service works" or "the
-  endpoint is implemented" are not. "A revoked key is rejected in under 5 s, verified by
-  an integration test" is. `qa-engineer` reads these items and checks each one has a
-  test that establishes it, so a vague DoD disarms the review panel downstream.
-- **Each work bullet names an outcome, not a layer.** Apply this test to every bullet:
-  *what can an outside caller do once it is delivered that they could not before?* If the
-  answer is "nothing — it enables the next bullet", it is a layer and it must be folded
-  into the bullet it serves.
+- **The title names an outcome, not a layer.** Apply the test to every entry: *what can an
+  outside caller do once it is merged that they could not before?* "Nothing — it enables
+  the next one" means it is a layer, and it must be folded into the slice it serves.
 
-  The smell is a bullet titled with a noun from the directory tree — *configuration*,
-  *client*, *store*, *middleware*, *the provider interface*. Those describe where code
-  goes, not what the service can do. A phase decomposed that way survives every check
-  in this skill and then poisons `/plan-work`, which inherits the shape and splits a
-  layer into sub-layers.
+  The smell is a title taken from the directory tree — *configuration*, *client*, *store*,
+  *middleware*, *the provider interface*. Those say where code goes, not what the service
+  can do. A list written that way survives every check in this skill and then poisons
+  `/plan-work`, which inherits the shape and splits a layer into sub-layers.
 
   Concretely: "load the chain list from configuration" is a layer. "return the current
-  block of one hardcoded chain, end to end" is an outcome — and it makes the
-  configuration work fall out of it, sized to what is actually needed.
+  block of one chain, end to end" is an outcome — and it makes the configuration work fall
+  out of it, sized to what is actually needed.
 
-  A slice that genuinely cannot be vertical exists (a dependency bump, a migration with
-  no user-visible effect). It is allowed, but it must say so explicitly and it must
-  **never be the first bullet of a phase** — the first one decides whether the phase can
-  be validated at all.
+- **The first slice must be shippable end to end.** It decides whether anything can be
+  validated at all: a first slice that delivers a layer cannot be checked by anything, so
+  it cannot be wrong either, which is the problem.
 
-Keep the existing Phase 0 (the template's baseline) as the worked example of a
-satisfied DoD.
+- **Every *Definition of done* is falsifiable.** "The service works" or "the endpoint is
+  implemented" are not. "A revoked key is rejected in under 5 s, established by an
+  integration test" is. `qa-engineer` reads the DoD of the slice under review and checks a
+  test establishes it, so a vague one disarms the panel downstream.
+
+  Keep running-system targets — latency percentiles, availability — out of the DoD and in
+  §9. An SLO is measured over a window; a DoD is something a test fails on today.
+  Conflating them produces a DoD that cannot fail for the reason it claims.
+
+- **Stay coarse, and stay short.** Outcome, rough size, governing decision — nothing more.
+  The exact files and the out-of-scope section are `/plan-work`'s job, produced immediately
+  before the slice is built, because a slice specified today against a codebase that will
+  have changed is specified wrong.
+
+  Specify **the next few slices only**. Everything else goes under *Later* as one line of
+  intent, with no size and no DoD. Planning slice 12 today is waste, and a long list reads
+  as a commitment nobody made.
+
+A slice that genuinely cannot be vertical exists (a dependency bump, a migration with no
+user-visible effect). It is allowed, but say so explicitly, and never make it the first.
+
+Keep the existing entry under *Done* (the template baseline) as the worked example of a
+falsifiable DoD.
 
 ## ④ Declare the ADR backlog, and draft each ADR
 
@@ -128,8 +140,8 @@ No — it does not, and writing one is a net loss:
 - the shape of a config file, the name of a field, the spelling of a route;
 - anything a code review comment settles.
 
-**Count check.** More ADRs than phases is a signal, not an achievement: re-read them and
-apply the test above to each. Seven ADRs on a three-phase project means five of them are
+**Count check.** More ADRs than slices is a signal, not an achievement: re-read them and
+apply the test above to each. Seven ADRs on a four-slice project means most of them are
 ceremony, and ceremony has a cost — each one is a decision the user must arbitrate before
 the slices that depend on it become implementable. Inflating the count converts an
 approval gate into a queue.
@@ -140,11 +152,11 @@ The trace survives; the ceremony does not.
 
 ### Drafting
 
-List the surviving decisions in §3 with their target phase, then draft each one **in the
+List the surviving decisions in §3 with the slice they govern, then draft each one **in the
 plan file**, from `docs/adr/0000-template.md`, using the next free number in
 `docs/adr/`:
 
-- `**Status**: Proposed`, `**Phase**` filled in.
+- `**Status**`, and `**Slice**` set to the §6 entry the decision governs.
 - `## Context`, `## Options considered`, `## Consequences`, `## Mitigations`,
   `## Verification` written.
 - Each option names **what is lost**, not only what is gained — that is the template's
@@ -172,13 +184,13 @@ Draft, in the plan file:
   module path everywhere and re-tidies. Do it **before** the first commit, otherwise
   every later diff carries the rename noise.
 
-## ⑥ Have the phases critiqued
+## ⑥ Have the slice list critiqued
 
 Spawn `tech-lead` (Agent tool, `subagent_type: tech-lead`), **one call**, in **mode
-"phases"** — say so explicitly in the brief, it changes which lenses it applies. Pass:
+Pass:
 
 - the original need and the answers from step ②;
-- the drafted phases with their *Definition of done*;
+- the drafted slice list with each entry's *Definition of done*;
 - the declared ADR backlog.
 
 Wait for its verdict before handing back.
@@ -188,13 +200,13 @@ Wait for its verdict before handing back.
 In this order:
 
 1. **The `tech-lead` verdict** and its findings. On `[LEAD]: BLOCKING`, propose the
-   corrected phase decomposition rather than asking the user to arbitrate a problem that
+   corrected slice list rather than asking the user to arbitrate a problem that
    is already diagnosed.
 2. The drafted `docs/SPEC.md` sections, the ADRs, and the new headers.
 3. **The write order after approval**, explicitly:
    - `make rename MODULE_NEW=…` first;
    - then `docs/SPEC.md`, the ADRs, the `CLAUDE.md` and `README.md` headers;
-   - then decide each ADR and set its `Status: Accepted` — a phase whose governing ADR
+   - then decide each ADR and set its `Status: Accepted` — a slice whose governing ADR
      is still `Proposed` is not implementable;
    - then `make check`, and only then the first `/plan-work`.
 
