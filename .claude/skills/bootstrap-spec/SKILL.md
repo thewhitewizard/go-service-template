@@ -74,7 +74,7 @@ For §6, one section per phase:
 **Definition of done**: <a criterion that would FAIL if the implementation were wrong>
 ```
 
-Two rules for the phases:
+Three rules for the phases:
 
 - **Phase 1 must be shippable end to end.** A first phase that delivers a layer rather
   than a working slice cannot be validated by anything — so it cannot be wrong either,
@@ -83,15 +83,66 @@ Two rules for the phases:
   endpoint is implemented" are not. "A revoked key is rejected in under 5 s, verified by
   an integration test" is. `qa-engineer` reads these items and checks each one has a
   test that establishes it, so a vague DoD disarms the review panel downstream.
+- **Each work bullet names an outcome, not a layer.** Apply this test to every bullet:
+  *what can an outside caller do once it is delivered that they could not before?* If the
+  answer is "nothing — it enables the next bullet", it is a layer and it must be folded
+  into the bullet it serves.
+
+  The smell is a bullet titled with a noun from the directory tree — *configuration*,
+  *client*, *store*, *middleware*, *the provider interface*. Those describe where code
+  goes, not what the service can do. A phase decomposed that way survives every check
+  in this skill and then poisons `/plan-work`, which inherits the shape and splits a
+  layer into sub-layers.
+
+  Concretely: "load the chain list from configuration" is a layer. "return the current
+  block of one hardcoded chain, end to end" is an outcome — and it makes the
+  configuration work fall out of it, sized to what is actually needed.
+
+  A slice that genuinely cannot be vertical exists (a dependency bump, a migration with
+  no user-visible effect). It is allowed, but it must say so explicitly and it must
+  **never be the first bullet of a phase** — the first one decides whether the phase can
+  be validated at all.
 
 Keep the existing Phase 0 (the template's baseline) as the worked example of a
 satisfied DoD.
 
 ## ④ Declare the ADR backlog, and draft each ADR
 
-`docs/SPEC.md` §7 requires an ADR for any non-obvious decision. List them in §3 with
-their target phase, then draft each one **in the plan file**, from
-`docs/adr/0000-template.md`, using the next free number in `docs/adr/`:
+### The test that decides whether something deserves an ADR
+
+`docs/SPEC.md` §7 asks for an ADR on any non-obvious decision, and "non-obvious" is far
+too generous a bar on its own. Apply this one instead:
+
+> **Would reversing this decision later be expensive?**
+
+Yes — it earns an ADR:
+
+- it fixes a persisted data shape, a wire contract, or a publicly exposed surface;
+- it adds a dependency that would have to be unpicked from call sites;
+- it determines behaviour under failure (fail-open vs fail-closed, degrade vs refuse);
+- it draws a responsibility boundary between packages or services.
+
+No — it does not, and writing one is a net loss:
+
+- two options that both work and would take an hour to swap;
+- the shape of a config file, the name of a field, the spelling of a route;
+- anything a code review comment settles.
+
+**Count check.** More ADRs than phases is a signal, not an achievement: re-read them and
+apply the test above to each. Seven ADRs on a three-phase project means five of them are
+ceremony, and ceremony has a cost — each one is a decision the user must arbitrate before
+the slices that depend on it become implementable. Inflating the count converts an
+approval gate into a queue.
+
+**Demoted decisions are not lost.** Record them as a short *Decisions taken inline* list
+in the relevant `docs/SPEC.md` section, or as a comment where the code makes the choice.
+The trace survives; the ceremony does not.
+
+### Drafting
+
+List the surviving decisions in §3 with their target phase, then draft each one **in the
+plan file**, from `docs/adr/0000-template.md`, using the next free number in
+`docs/adr/`:
 
 - `**Status**: Proposed`, `**Phase**` filled in.
 - `## Context`, `## Options considered`, `## Consequences`, `## Mitigations`,

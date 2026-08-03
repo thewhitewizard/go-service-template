@@ -58,6 +58,41 @@ anything skips the only step this skill adds over plain plan mode.
 One slice = **one PR of ≤ 400 added lines of Go, tests included**. Split by **vertical**
 functional slice (one endpoint and its tests, never a whole layer).
 
+### Re-cut the phase if its bullets are layers
+
+`docs/SPEC.md` §6 describes the work, but it is not a split you are bound by. If its
+bullets are named after layers — *configuration*, *client*, *store*, *middleware*, *the
+provider interface* — **re-cut them into outcomes and say that you did**, with one line
+on why. Inheriting the shape is how a layer gets split into sub-layers, and a slice of a
+layer is unreviewable: it has no observable behaviour to assert, so `qa-engineer` has
+nothing to check and the PR is 400 lines of plumbing nobody can validate.
+
+The test, per slice: **what can an outside caller do once this is merged that they could
+not before?** "Nothing, it enables the next slice" means it is not a slice.
+
+Two consequences worth expecting:
+
+- A layer bullet almost always **shrinks** when re-cut. "Load the chain list from
+  configuration" is unbounded; "return the current block of one chain, end to end" pulls
+  in exactly the configuration it needs and no more. If your estimate for a layer slice
+  comes out far above the limit, that is usually the signal to re-cut, not to split
+  further.
+- **Do not introduce an abstraction the phase does not yet need.** A registry, a list, an
+  interface for a single implementer — a configuration file for one configured thing.
+  Those belong to the phase that brings the second case. Naming them in the out-of-scope
+  section is how you record the intent without paying for it now.
+
+A slice that genuinely cannot be vertical (a dependency bump, a migration with no
+user-visible effect) is allowed, but label it as such and never make it the first slice.
+
+### Watch what a line of code costs in this repository
+
+Comment density here runs 25–40% on production code — `internal/config` is 388 lines for
+six scalar fields, tests included. So the 400-line budget buys roughly 250 lines of
+logic, and any slice extending a heavily commented file starts from that baseline.
+Estimate against the real files you are about to touch, not against an abstract idea of
+how big the change is.
+
 One section per slice:
 
 ```markdown
@@ -85,9 +120,22 @@ failure mode: it ends up unused.
 
 ## ④ Draft the ADR of any structural decision
 
-`docs/SPEC.md` §7: an ADR for any non-obvious decision. If framing surfaced a decision
-the plan would settle implicitly — deletion semantics, schema choice, behaviour during a
-dependency outage, a responsibility boundary — record it.
+`docs/SPEC.md` §7 asks for an ADR on any non-obvious decision, which is too generous a
+bar on its own. The test is: **would reversing this decision later be expensive?**
+
+It earns an ADR if it fixes a persisted shape or a wire contract, adds a dependency that
+would have to be unpicked from call sites, determines behaviour under failure, or draws a
+responsibility boundary. It does not if two options both work and would take an hour to
+swap, or if it is the shape of a config file, the name of a field, or anything a review
+comment settles.
+
+That restraint is not tidiness. Every ADR is a decision the user must arbitrate before
+the slices depending on it become implementable, so inflating the count turns an approval
+gate into a queue. Record the demoted ones as a comment where the code makes the choice —
+the trace survives, the ceremony does not.
+
+For a decision that passes the test — deletion semantics, schema choice, behaviour during
+a dependency outage, a responsibility boundary — record it properly.
 
 Draft it **in full, in the plan file**, from `docs/adr/0000-template.md`, with the next
 free number in `docs/adr/`:

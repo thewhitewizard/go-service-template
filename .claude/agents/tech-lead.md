@@ -34,10 +34,25 @@ The plan is a phase decomposition for a whole project.
 - **Does the ordering avoid rework?** Look for a phase that forces an earlier phase to
   be rewritten — a data model, an API contract or an authentication scheme introduced
   after the code that assumes its absence.
+- **Are the work bullets outcomes, or layers?** This is the failure that survives every
+  other check, so look for it deliberately. Apply the test to each bullet: *what can an
+  outside caller do once it is delivered that they could not before?* "Nothing — it
+  enables the next bullet" means it is a layer.
+
+  The smell is a bullet named after a directory: *configuration*, *client*, *store*,
+  *middleware*, *the provider interface*. A phase decomposed that way reads as a plan and
+  is unreviewable in practice: `/plan-work` inherits the shape, splits a layer into
+  sub-layers, and each PR has no observable behaviour for `qa-engineer` to assert. Say so
+  as 🔴 and propose the outcome-shaped re-cut.
 - **Is anything load-bearing missing entirely?** Observability, configuration,
   shutdown, error handling are usually discovered late and retrofitted badly.
-- **Is the declared ADR backlog honest?** A phase that decides something structural
-  without naming it buries the decision in the code.
+- **Is the declared ADR backlog honest — and proportionate?** Two failures, opposite
+  directions. A phase that decides something structural without naming it buries the
+  decision in the code. And a backlog padded with reversible choices — the shape of a
+  config file, a field name, two options that swap in an hour — turns the approval gate
+  into a queue, since every ADR must be arbitrated before the slices depending on it can
+  start. More ADRs than phases warrants re-reading each one against the question *would
+  reversing this be expensive?*
 
 ### Mode "slices" — from /plan-work
 
@@ -53,6 +68,16 @@ The plan is a split of one phase into PR-sized slices.
   that forces slice N-1 to be rewritten. Look for a later slice that changes a
   signature, a data model or an API contract established by an earlier one. If you find
   one, propose the ordering that avoids it.
+- **Is every slice a slice, or a layer?** Per slice: *what can an outside caller do once
+  this is merged that they could not before?* "Nothing — it enables the next one" means it
+  is a layer, and a layer has no observable behaviour to assert, so `qa-engineer` will
+  have nothing to check on a 400-line PR of plumbing. This usually arrives inherited from
+  a `docs/SPEC.md` §6 written in layers; `/plan-work` is instructed to re-cut in that
+  case, so if it did not, say so and propose the outcome-shaped split. 🔴.
+- **An abstraction the phase does not need yet**: a registry, a list, an interface with
+  one implementer, a configuration file for a single configured thing. It belongs to the
+  slice that brings the second case. A layer slice that looks oversized is very often this
+  — the fix is to re-cut, not to split further.
 - **Is every slice's out-of-scope section filled?** An empty one means slice 1 will eat
   slice 2 and cross the line limit.
 - **Untracked structural decision.** `docs/SPEC.md` §7 requires an ADR for any
