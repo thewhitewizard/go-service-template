@@ -243,8 +243,8 @@ one finding per problem instead of four.
 
 | Skill | Frequency |
 |---|---|
-| `/bootstrap-spec` | Once per project |
-| `/plan-work` | Once per unit of work, in plan mode |
+| `/bootstrap-spec` | Once per project — three sentences and the first slice, nothing more |
+| `/plan-work` | Once per unit of work, in plan mode — questions, split, ADR, and `tech-lead` when warranted |
 | `/review` | Once per slice, before the PR |
 | `/open-pr` | Once per slice |
 

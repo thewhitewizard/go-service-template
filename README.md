@@ -52,12 +52,13 @@ Without Docker: `make run`, then the same `curl`s.
    every other target is a plain `go ...` or `docker ...` command you can type directly.
    Both implementations end with the same post-condition: zero remaining occurrence of
    the old name, or they fail. A half-renamed repository is not a possible outcome.
-3. `/bootstrap-spec "what your service does"` — interviews you, then fills
-   `docs/SPEC.md`: the context, the declared decisions, and **§6, an ordered list of
-   slices — one slice, one PR**, each with a falsifiable *Definition of done*. There is no
-   phase or milestone in between: a need becomes a list, each entry becomes a PR.
-4. Decide the drafted ADRs and set them to `Status: Accepted`. A slice whose governing ADR
-   is still `Proposed` is not implementable.
+3. `/bootstrap-spec "what your service does"` — a few questions, then three sentences of
+   context and **the first slice** in `docs/SPEC.md`. Deliberately minimal: no ADR
+   backlog, no full slice list, no critique. Everything else accretes as slices get
+   built, because a specification is worth what you already know and at hour zero you
+   know least.
+4. `/plan-work "<the first slice>"` — this is where the open questions, the split and the
+   `tech-lead` critique happen, against the code as it actually is.
 5. `make check` — must be green before you write a line of your own.
 
 Then, for each unit of work: `/plan-work` → implement → `/review` → `/open-pr`.

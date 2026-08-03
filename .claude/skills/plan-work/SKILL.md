@@ -1,6 +1,6 @@
 ---
 name: plan-work
-description: Frames one unit of work — asks the questions the need leaves open, locates its entry in the SPEC slice list, splits into slices of ≤ 400 lines with an out-of-scope section and a falsifiable Definition of done, drafts the ADR of any structural decision (Decision left empty), then has the plan critiqued by tech-lead. Run in plan mode, before writing code.
+description: Frames one unit of work — asks the questions the need leaves open, splits into slices of ≤ 400 lines with an out-of-scope section and a falsifiable Definition of done, drafts the ADR of a decision that is expensive to reverse, and calls tech-lead only when there is something to critique. The single planning step: run it in plan mode, before writing code.
 argument-hint: "<the need, in a sentence or two>"
 ---
 
@@ -120,8 +120,12 @@ failure mode: it ends up unused.
 
 ## ④ Draft the ADR of any structural decision
 
-`docs/SPEC.md` §7 asks for an ADR on any non-obvious decision, which is too generous a
-bar on its own. The test is: **would reversing this decision later be expensive?**
+This is the **only** place an ADR is drafted. `/bootstrap-spec` deliberately does not: a
+decision is recorded when the slice that depends on it is planned, because that is when the
+options are knowable and when the code has actually forced the question.
+
+`docs/SPEC.md` §7 asks for an ADR on any non-obvious decision, which is too generous a bar
+on its own. The test is: **would reversing this decision later be expensive?**
 
 It earns an ADR if it fixes a persisted shape or a wire contract, adds a dependency that
 would have to be unpicked from call sites, determines behaviour under failure, or draws a
@@ -158,10 +162,27 @@ the user, exactly as the merge does.
 If a slice depends on an ADR that is still `Proposed` — the one just drafted, or a
 pre-existing one — say so in the slice: it is not implementable before the decision.
 
-## ⑤ Have it critiqued
+## ⑤ Have it critiqued — when there is something to critique
 
-Spawn `tech-lead` (Agent tool, `subagent_type: tech-lead`), **one call**, in **mode
-"slices"** — say so explicitly in the brief, it changes which lenses it applies. Pass:
+`tech-lead` costs about five minutes. It earns that on a plan with room to be wrong; it
+does not on a single small slice whose out-of-scope section is filled. Spawning it every
+time is how a useful gate turns into a tax, and a tax gets routed around.
+
+**Spawn it if any of these holds:**
+
+- the plan has **more than one slice** — ordering and rework are its sharpest lenses, and
+  they need at least two slices to apply;
+- a slice's estimate is **within 20% of the 400-line limit** — that is where an
+  underestimate turns into a re-split after the code is written;
+- the plan **introduces an abstraction** (an interface, a registry, a config file) or
+  touches a boundary named in `CLAUDE.md`;
+- an ADR was drafted at step ④.
+
+**Otherwise skip it and say so in one line**: *"single slice, ~N lines, out-of-scope filled
+— tech-lead skipped."* The user can always ask for it. The review panel still runs on the
+code afterwards; nothing is being waived, only deferred to where it is cheaper.
+
+When you do spawn it — Agent tool, `subagent_type: tech-lead`, **one call**. Pass:
 
 - the original need and the answers from step ①;
 - the drafted plan (slices, estimates, out-of-scope, DoD);
@@ -173,8 +194,9 @@ Wait for its verdict before handing back.
 
 In this order:
 
-1. **The `tech-lead` verdict** and its findings. On `[LEAD]: BLOCKING`, propose the
-   corrected plan rather than asking the user to arbitrate a problem already diagnosed.
+1. **The `tech-lead` verdict** and its findings, if it ran — otherwise the one-line reason
+   it was skipped. On `[LEAD]: BLOCKING`, propose the corrected plan rather than asking the
+   user to arbitrate a problem already diagnosed.
 2. The plan: context, questions and answers, slices, drafted ADRs.
 3. If an ADR was drafted, **state explicitly** that writing it to `docs/adr/` is the
    first action after approval, before any line of code, and that it must be decided and
