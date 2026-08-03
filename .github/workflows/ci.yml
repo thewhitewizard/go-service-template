@@ -60,6 +60,67 @@ jobs:
           version: v2.12.2
           args: --timeout 5m
 
+  # rename.ps1 cannot be exercised on a Linux runner, and a template's rename script
+  # is run exactly once per new project — by someone who has no idea whether it
+  # works. So the machine runs it, on Windows, on every push.
+  #
+  # The checkout is throwaway, so the real rename is performed rather than only the
+  # dry run: the assertion that matters is that the renamed tree still builds and
+  # its tests still pass.
+  rename-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Dry run changes nothing
+        shell: pwsh
+        run: |
+          $before = git status --porcelain
+          ./rename.ps1 -ModuleNew github.com/acme/ci-rename-check -DryRun
+          $after = git status --porcelain
+          if ($before -ne $after) { throw "-DryRun modified the working tree" }
+
+      - name: Rejects a malformed module path
+        shell: pwsh
+        run: |
+          try {
+            ./rename.ps1 -ModuleNew 'not a module path'
+            throw "the script accepted a malformed module path"
+          } catch {
+            if ($_.Exception.Message -eq "the script accepted a malformed module path") { throw }
+            Write-Host "rejected as expected: $($_.Exception.Message)"
+          }
+
+      - name: Rename for real
+        shell: pwsh
+        run: ./rename.ps1 -ModuleNew github.com/acme/ci-rename-check
+
+      # The point of the whole job: a renamed tree that compiles and passes. The
+      # script's own post-condition check already ran inside it.
+      - name: The renamed tree still builds and tests
+        shell: pwsh
+        run: |
+          go build ./...
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+          go test ./...
+          if ($LASTEXITCODE -ne 0) { throw "tests failed" }
+
+      - name: No occurrence of the old name survives
+        shell: pwsh
+        run: |
+          $hits = Select-String -Path (Get-ChildItem -Recurse -File -Force |
+              Where-Object { $_.FullName -notmatch '[\\/]\.git[\\/]' } |
+              Select-Object -ExpandProperty FullName) -SimpleMatch -Pattern 'go-service-template' -List
+          if ($hits) {
+            $hits | ForEach-Object { Write-Host $_.Path }
+            throw "the old name survived the rename"
+          }
+
   # The image is part of the deliverable, so a broken Dockerfile must fail CI and
   # not the deploy. Build only — no push: publishing is a release concern.
   docker:

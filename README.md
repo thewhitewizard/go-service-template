@@ -45,6 +45,13 @@ Without Docker: `make run`, then the same `curl`s.
 2. `make rename MODULE_NEW=github.com/your-org/your-service` — rewrites the module path
    everywhere and re-tidies. Do this **before the first commit**, or every later diff
    carries the rename noise.
+
+   **On Windows**, without Git Bash: `.\rename.ps1 -ModuleNew github.com/your-org/your-service`
+   (add `-DryRun` to see what it would touch first). It is the only Makefile target with
+   a PowerShell counterpart, because it is the only one that depends on Unix tools —
+   every other target is a plain `go ...` or `docker ...` command you can type directly.
+   Both implementations end with the same post-condition: zero remaining occurrence of
+   the old name, or they fail. A half-renamed repository is not a possible outcome.
 3. `/bootstrap-spec "what your service does"` — interviews you, then fills
    `docs/SPEC.md` (context, phases with a falsifiable *Definition of done*, ADR backlog)
    and rewrites the `CLAUDE.md` and README headers.

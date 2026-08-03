@@ -105,5 +105,17 @@ endif
 		--exclude-dir=.git --exclude-dir=bin --exclude-dir=node_modules . \
 		| xargs -r sed -i 's|$(NAME)|$(notdir $(MODULE_NEW))|g'
 	@$(GO) mod tidy
+	@# Post-condition, identical to the one in rename.ps1. It is what makes the two
+	@# implementations interchangeable: whatever route they take, a tree that still
+	@# mentions the old name is a failed rename, and it fails loudly instead of
+	@# leaving a half-renamed repository to discover three commits later.
+	@# MODULE and NAME were expanded when make started, so they still hold the OLD
+	@# values here. -F for literal matching (the dots in a module path are regex
+	@# wildcards otherwise), -I to skip binaries.
+	@if grep -rlI -F -e '$(MODULE)' -e '$(NAME)' \
+		--exclude-dir=.git --exclude-dir=bin --exclude-dir=node_modules . ; then \
+		echo "Rename incomplete — the files above still mention the old name."; \
+		exit 1; \
+	fi
 	@echo "Done. Run 'make check' to confirm, then commit."
 	@echo "Note: README.md and CLAUDE.md still describe the template — /bootstrap-spec rewrites their headers."
