@@ -63,6 +63,17 @@ Priority attention points:
   source of truth** that the rule's subject is real: `go.mod` for a module path, the
   route table for a path, the filesystem for a directory. See
   `TestImportRulePrefixesAreRealModules`.
+- **Mechanism declared but never wired.** The same family, one step further out: a
+  function that implements a documented rule and that nothing calls, a config field
+  left at its zero value, a middleware built but never registered. The framework
+  default then applies silently, and — the part that makes it expensive — the
+  documentation asserting the mechanism works turns a missing wire into a *wrong*
+  promise. The first developer to follow the documented rule gets the default
+  behaviour and no error anywhere. Grep for callers of anything a rule names, and
+  check every framework config field the rule depends on is actually set. The
+  template shipped with `handlers.StatusFor` uncalled and `fiber.Config.ErrorHandler`
+  unset, so every domain sentinel became a 500 while `CLAUDE.md` promised a
+  centralised mapping — found by `tech-lead` on its first real run.
 - **Resource created before its release is armed**: a constructor returning
   `(object, error)` where **both are non-nil**. If cleanup is only armed on the happy
   path, the resource leaks precisely when things go wrong. Arm the cleanup **before**

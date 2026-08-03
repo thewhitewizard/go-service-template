@@ -20,18 +20,25 @@ const (
 // statusKey is the JSON field every status response shares.
 const statusKey = "status"
 
-// StatusFor maps a domain error to an HTTP status code.
+// StatusFor maps an error to the HTTP status code the client will receive.
 //
-// This is the *only* translation point between the domain and HTTP. Keeping it
-// here is what lets the domain stay free of the framework: a handler returns a
-// domain sentinel, and this function decides what the client sees. Scattering
-// fiber.NewError calls through the business code would put the mapping in a
-// dozen places and guarantee they drift.
+// This is the *only* translation point between the domain and HTTP, and it has
+// two consumers that must never disagree: the server's ErrorHandler, which
+// writes the response, and the metrics middleware, which records what was sent.
+// Computing the status in two places is how a dashboard ends up reporting 500s
+// for requests the client saw as 404s.
 //
-// An unknown error deliberately maps to 500 and its message is *not* forwarded:
-// an error built deeper in the stack may quote a connection string, a token or a
-// file path, and %w chains carry that all the way up.
+// A *fiber.Error carries a status chosen deliberately by the transport layer, so
+// it wins. Everything else is matched against the domain sentinels, and an
+// unrecognised error maps to 500 — its message is never forwarded to the client,
+// because an error built deeper in the stack may quote a connection string, a
+// token or a file path, and %w chains carry that all the way up.
 func StatusFor(err error) int {
+	var fiberErr *fiber.Error
+	if errors.As(err, &fiberErr) {
+		return fiberErr.Code
+	}
+
 	switch {
 	case err == nil:
 		return fiber.StatusOK

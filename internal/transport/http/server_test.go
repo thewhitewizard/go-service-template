@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/thewhitewizard/go-service-template/internal/config"
+	"github.com/thewhitewizard/go-service-template/internal/domain"
 	"github.com/thewhitewizard/go-service-template/internal/observability"
 	"github.com/thewhitewizard/go-service-template/internal/transport/http/handlers"
 )
@@ -195,6 +198,129 @@ func TestUnmatchedRouteIsNotFound(t *testing.T) {
 	defer func() { assert.NoError(t, resp.Body.Close()) }()
 
 	assert.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+}
+
+// TestDomainErrorsAreMappedToStatus is the test that makes handlers.StatusFor
+// load-bearing rather than decorative.
+//
+// The mapping existed from the start, but nothing called it and fiber.Config
+// left ErrorHandler unset — so Fiber's DefaultErrorHandler applied and every
+// domain sentinel became a 500. CLAUDE.md promised a centralised mapping the code
+// did not perform, and the first developer to follow the documented rule would
+// have got a silently wrong status.
+//
+// Remove the ErrorHandler from server.go and this test goes red.
+func TestDomainErrorsAreMappedToStatus(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err        error
+		wantStatus int
+	}{
+		"not found":     {domain.ErrNotFound, fiber.StatusNotFound},
+		"invalid input": {domain.ErrInvalidInput, fiber.StatusBadRequest},
+		"unauthorized":  {domain.ErrUnauthorized, fiber.StatusUnauthorized},
+		"conflict":      {domain.ErrConflict, fiber.StatusConflict},
+		"unavailable":   {domain.ErrUnavailable, fiber.StatusServiceUnavailable},
+		// A wrapped sentinel must map the same way: handlers use %w to add context,
+		// and errors.Is has to see through it.
+		"wrapped not found": {
+			fmt.Errorf("loading user 42: %w", domain.ErrNotFound),
+			fiber.StatusNotFound,
+		},
+		// Anything unrecognised is a server fault, not a client one.
+		"unknown error": {errors.New("something broke"), fiber.StatusInternalServerError},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			srv, _ := newTestServer(t)
+			srv.app.Get("/boom", func(_ fiber.Ctx) error { return tc.err })
+
+			resp := request(t, srv, "/boom")
+
+			defer func() { assert.NoError(t, resp.Body.Close()) }()
+
+			assert.Equal(t, tc.wantStatus, resp.StatusCode)
+		})
+	}
+}
+
+// TestErrorBodyDoesNotLeakTheErrorMessage guards the security half of the same
+// fix. Fiber's DefaultErrorHandler writes err.Error() into the response body, so
+// a wrapped error carrying a DSN, a token or a signed URL would be handed to the
+// caller. Only the generic reason phrase may go out.
+func TestErrorBodyDoesNotLeakTheErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	// gosec is right that this looks like a credential — that is the payload under
+	// test. The assertion below is precisely that a string of this shape must not
+	// reach the response body.
+	//nolint:gosec // fake credential on purpose: it is what the test checks does not leak
+	const secret = "postgres://user:hunter2@db.internal:5432/app"
+
+	srv, logs := newTestServer(t)
+	srv.app.Get("/boom", func(_ fiber.Ctx) error {
+		return fmt.Errorf("connecting to %s: %w", secret, domain.ErrUnavailable)
+	})
+
+	resp := request(t, srv, "/boom")
+
+	defer func() { assert.NoError(t, resp.Body.Close()) }()
+
+	raw, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, fiber.StatusServiceUnavailable, resp.StatusCode)
+	assert.NotContains(t, string(raw), "hunter2", "the response body must not carry the error text")
+	assert.NotContains(t, string(raw), secret)
+	assert.Contains(t, string(raw), http.StatusText(fiber.StatusServiceUnavailable))
+
+	// The operator still needs the real cause: it belongs in the log, which is not
+	// handed to the caller.
+	assert.Contains(t, logs.String(), "request failed")
+	assert.Contains(t, logs.String(), "hunter2", "the full error must reach the logs")
+}
+
+// TestMetricStatusMatchesResponseStatus is the anti-divergence test. The response
+// status and the recorded status come from the same function on purpose; if one
+// side ever computes it independently, they drift and the dashboard reports 500s
+// for requests the client saw as 404s.
+func TestMetricStatusMatchesResponseStatus(t *testing.T) {
+	t.Parallel()
+
+	metrics := observability.NewMetrics()
+
+	var buf bytes.Buffer
+
+	srv := New(Deps{
+		Config:  testConfig(),
+		Log:     slog.New(slog.NewJSONHandler(&buf, nil)),
+		Metrics: metrics,
+	})
+	srv.app.Get("/boom", func(_ fiber.Ctx) error { return domain.ErrNotFound })
+
+	resp := request(t, srv, "/boom")
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+
+	metricsResp := request(t, srv, handlers.PathMetrics)
+
+	defer func() { assert.NoError(t, metricsResp.Body.Close()) }()
+
+	raw, err := io.ReadAll(metricsResp.Body)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(raw), `status="404"`,
+		"the metric must record the status the client received")
+	// Not `route="/boom",status="500"`: this route is registered after New filled the
+	// allowlist, so its label is "unmatched" and that assertion could never fail.
+	// Asserting on the status alone is what discriminates — sabotaging statusOf makes
+	// a status="500" series appear here.
+	assert.NotContains(t, string(raw), `status="500"`,
+		"no request faulted, so no 5xx series may exist")
 }
 
 // TestShutdownCancelsBaseContext pins the shutdown order: in-flight work is

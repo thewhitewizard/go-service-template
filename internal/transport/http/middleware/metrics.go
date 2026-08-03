@@ -1,10 +1,15 @@
 package middleware
 
 import (
-	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+
+	// Both live in the transport layer, and the metrics middleware genuinely needs
+	// to know how an error becomes a status: handlers owns that mapping, so the
+	// dependency points that way. handlers does not import middleware, so there is
+	// no cycle — keep it that way.
+	"github.com/thewhitewizard/go-service-template/internal/transport/http/handlers"
 )
 
 // RequestRecorder records one finished HTTP request.
@@ -99,15 +104,15 @@ func Metrics(rec RequestRecorder, allowed *RouteAllowlist) fiber.Handler {
 // returned, so the response still carries the pre-error status. Reading it
 // blindly would record a 200 for every failed request and make the error rate
 // permanently flat — the one metric an alert depends on.
+//
+// The mapping goes through handlers.StatusFor, the same function the server's
+// ErrorHandler uses to write the response. Duplicating the logic here is how a
+// dashboard ends up reporting 500s for requests the client saw as 404s: the two
+// would drift the first time a sentinel is added on one side only.
 func statusOf(c fiber.Ctx, err error) int {
 	if err == nil {
 		return c.Response().StatusCode()
 	}
 
-	var fiberErr *fiber.Error
-	if errors.As(err, &fiberErr) {
-		return fiberErr.Code
-	}
-
-	return fiber.StatusInternalServerError
+	return handlers.StatusFor(err)
 }

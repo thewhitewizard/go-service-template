@@ -5,6 +5,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -74,6 +75,13 @@ func New(deps Deps) *Server {
 		IdleTimeout:  deps.Config.IdleTimeout,
 		WriteTimeout: deps.Config.WriteTimeout,
 		AppName:      "go-service-template",
+
+		// Without this, Fiber's DefaultErrorHandler applies: every error that is
+		// not a *fiber.Error becomes a 500, so a handler returning a domain
+		// sentinel gets the wrong status — and worse, the default handler writes
+		// err.Error() into the response body, sending whatever a %w chain picked
+		// up along the way to the client.
+		ErrorHandler: errorHandler(deps.Log),
 	})
 
 	app.Use(recover.New(recover.Config{
@@ -117,6 +125,47 @@ func New(deps Deps) *Server {
 		cfg:        deps.Config,
 		baseCtx:    baseCtx,
 		baseCancel: baseCancel,
+	}
+}
+
+// errorHandler turns an error returned by a handler into a response.
+//
+// It is the counterpart of handlers.StatusFor: the status comes from there, so the
+// response and the metric recorded for it can never disagree.
+//
+// The body carries a *fiber.Error's message but never any other error's. A
+// *fiber.Error is built by the transport layer with the client in mind — take care
+// that such a message never embeds caller input or anything sensitive. Any other
+// error may quote a DSN, a token or a path picked up through a %w chain, so only
+// the generic reason phrase for the status goes out; the full error is logged.
+func errorHandler(log *slog.Logger) fiber.ErrorHandler {
+	return func(c fiber.Ctx, err error) error {
+		status := handlers.StatusFor(err)
+
+		message := http.StatusText(status)
+
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) && fiberErr.Message != "" {
+			message = fiberErr.Message
+		}
+
+		// Logged at Error only for a server-side fault: a 404 or a 400 is the
+		// caller being wrong, and logging those at Error turns the error log into
+		// noise that hides the faults that matter.
+		level := slog.LevelWarn
+		if status >= fiber.StatusInternalServerError {
+			level = slog.LevelError
+		}
+
+		log.LogAttrs(c.Context(), level, "request failed",
+			slog.Int("status", status),
+			slog.String("method", c.Method()),
+			slog.String("path", c.Path()),
+			slog.String("request_id", middleware.RequestIDFromCtx(c)),
+			slog.Any("error", err),
+		)
+
+		return c.Status(status).JSON(fiber.Map{"error": message})
 	}
 }
 
