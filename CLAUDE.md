@@ -1,6 +1,6 @@
 # [SERVICE NAME] — project guide
 
-> **[TO BE REPLACED — run `/bootstrap-spec`]** Two lines describing what this service
+> **[TO BE REPLACED]** Two lines describing what this service
 > does and who calls it. Everything below this header is template rules that carry over
 > to your service unchanged.
 
@@ -32,17 +32,17 @@
   merged before the next one opens.
 - **Announce the split before writing**: if a need clearly exceeds one PR, propose the
   split into vertical slices and wait for approval **before** writing code. The 400-line
-  limit is decided at split time, not at `gh pr create`. This is the rule `/plan-work`
-  applies.
+  limit is decided at split time, not at `gh pr create`. You do the splitting — that is
+  where your judgement is best calibrated — and `/critique` attacks it.
 - **The merge belongs to the human.** Claude (and its agents) opens the PR and gets CI
   green, then **hands back**; the final review and the `merge` are done by the user.
   Claude never runs `gh pr merge` and never deletes the branch — both are denied in
   `.claude/settings.json`.
 - Every PR leaves `main` **compiling and green**: `make check` (vet + lint + test).
 - Every non-trivial architecture decision → an ADR in the same PR or just before.
-- **Codified rituals**: framing a need via `/plan-work` (in plan mode, before writing
-  code); review via `/review`; opening a PR via `/open-pr` (never an ad-hoc
-  `gh pr create`).
+- **Codified rituals**: you write the plan in plan mode, then `/critique` has `tech-lead`
+  attack it before any code; `/review` runs the panel on the diff; `/open-pr` opens the PR
+  (never an ad-hoc `gh pr create`).
 
 ## Layering — non-negotiable
 
@@ -108,7 +108,7 @@ orchestrator picks the rest from the task at hand — there is no mapping to mai
 
 - **Framing, upstream**: `tech-lead` critiques a **plan** before the code exists (split,
   slice ordering, untracked structural decision, contradiction with an ADR or with the
-  layering rules). Spawned by `/plan-work` and `/bootstrap-spec`.
+  layering rules) — a plan **you** wrote. Spawned by `/critique`.
 - **Writing**: `go-developer` (production code), `go-test-writer` (tests).
 - **Review, read-only** — the panel `/review` spawns **in parallel**, with the
   **strictest verdict** winning: `go-reviewer` (correctness, safety, concurrency,
@@ -123,5 +123,4 @@ corresponding capability arrives.
 
 ## Project status
 
-**[TO BE DEFINED — run `/bootstrap-spec`]** The ordered slice list — one slice, one PR —
-is `docs/SPEC.md` §6.
+**[TO BE DEFINED]** The ordered slice list — one slice, one PR — is `docs/SPEC.md` §6.

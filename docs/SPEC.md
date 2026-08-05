@@ -1,21 +1,23 @@
 # Specification — [SERVICE NAME]
 
-> **[TO BE DEFINED — run `/bootstrap-spec`]**
+> **[TO BE DEFINED — you write this]**
 >
 > Sections §2, §4, §5, §7, §8 and §10 ship filled in: they describe the template and
 > carry over to your service as they are. Sections **§1, §3, §6 and §9** are yours to
-> define. `/bootstrap-spec` interviews you and fills them.
+> define, by hand. Three sentences and one slice: you write them faster than any agent
+> can interview you for them, and writing them is what makes you hold the model of the
+> system the agents downstream work from.
 >
 > This file is not documentation for its own sake — three agents read it:
 > `qa-engineer` checks a test establishes the *Definition of done* of the slice under
-> review, `/plan-work` locates that slice in §6 before splitting it, and the ADR rule comes
-> from §7. Leaving §6 vague disarms the review panel downstream.
+> review, `tech-lead` attacks §6 when you run `/critique`, and the ADR rule comes from §7.
+> Leaving §6 vague disarms both of them.
 
 ---
 
 ## 1. Context and goals
 
-**[TO BE DEFINED — run `/bootstrap-spec`]**
+**[TO BE DEFINED — three sentences]**
 
 What problem the service solves, who calls it, and what it explicitly does not do.
 
@@ -48,7 +50,7 @@ Non-obvious decisions are recorded in `docs/adr/`. Accepted so far:
 - [ADR-0001 — Fiber v3 rather than net/http, confined to the transport layer](./adr/0001-fiber-over-net-http.md)
 - [ADR-0002 — Bound the `route` metric label with an allowlist](./adr/0002-metrics-label-cardinality.md)
 
-**Backlog — [TO BE DEFINED — run `/bootstrap-spec`]**
+**Backlog — [TO BE DEFINED, as decisions actually arise]**
 
 Declare here, with the §6 slice each one governs, the decisions your service must make before
 the code assumes an answer. Declaring is not deciding: an ADR is written with
@@ -129,9 +131,9 @@ Two rules per entry, and they are what the review agents downstream depend on:
   the review panel.
 
 Entries here stay **coarse**: outcome, rough size, governing decision. The implementable
-detail — exact files, exact out-of-scope, refined estimate — is produced by `/plan-work`
-immediately before the slice is built. A slice specified today against a codebase that
-will have changed by then is specified wrong, and planning slice 12 now is waste.
+detail — exact files, exact out-of-scope, refined estimate — you write immediately before
+building the slice, then run `/critique` on it. A slice specified today against a codebase
+that will have changed by then is specified wrong, and planning slice 12 now is waste.
 
 Keep only the next few slices specified. Anything further belongs under *Later*, as intent
 rather than plan.
@@ -151,7 +153,7 @@ and the provisioned Grafana dashboard shows a request rate.
 
 ### Next
 
-**[TO BE DEFINED — run `/bootstrap-spec`]**
+**[TO BE DEFINED — the next slice, and only that]**
 
 ```markdown
 ### 1. <what a caller can do that they could not before>
@@ -163,12 +165,12 @@ and the provisioned Grafana dashboard shows a request rate.
 
 ### Later — intent, not plan
 
-**[TO BE DEFINED — run `/bootstrap-spec`]**
+**[TO BE DEFINED — one line each]**
 
 What the service is meant to grow into, one line each. No sizes, no *Definition of done*:
 those are written when the slice moves up to *Next*. This section exists so an idea can be
-recorded without being paid for now — and so `/plan-work` has somewhere to put an
-abstraction it declined to introduce early.
+recorded without being paid for now — and so an abstraction you decline to introduce early
+has somewhere to live.
 
 ---
 
@@ -201,7 +203,7 @@ abstraction it declined to introduce early.
 
 ## 9. Service level objectives
 
-**[TO BE DEFINED — run `/bootstrap-spec`, or delete this section]**
+**[TO BE DEFINED, or delete this section]**
 
 Targets the service is expected to meet in production — latency, availability, freshness of
 the data it serves. One line each, with the metric that measures it.
@@ -243,8 +245,7 @@ one finding per problem instead of four.
 
 | Skill | Frequency |
 |---|---|
-| `/bootstrap-spec` | Once per project — three sentences and the first slice, nothing more |
-| `/plan-work` | Once per unit of work, in plan mode — questions, split, ADR, and `tech-lead` when warranted |
+| `/critique` | Once per plan you write, in plan mode — `tech-lead` attacks it, before code |
 | `/review` | Once per slice, before the PR |
 | `/open-pr` | Once per slice |
 

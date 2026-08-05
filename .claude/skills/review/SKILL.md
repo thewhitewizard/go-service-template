@@ -45,8 +45,8 @@ Each agent's prompt contains:
   serialised into the prompt: each agent reads what concerns it, which keeps its context
   budget for the reading that matters;
 - **the slice under review** and its *Definition of done*: take it from the plan file
-  `/plan-work` produced, or from the matching `docs/SPEC.md` §6 entry, and ask the user if
-  neither is findable. `qa-engineer` checks a test establishes that DoD, so it cannot do its
+  the user wrote, or from the matching `docs/SPEC.md` §6 entry, and ask the user if neither
+  is findable. `qa-engineer` checks a test establishes that DoD, so it cannot do its
   job without it;
 - a reminder of its exclusive remit, so it does not return another agent's findings;
 - the output contract: `[PREFIX]: ...` verdict on the first line, then per finding

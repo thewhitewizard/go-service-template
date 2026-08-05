@@ -8,7 +8,7 @@ the three operational endpoints, a container image and a local observability sta
 part that took the effort is the other one: seven agents with non-overlapping remits, four
 rituals, and a handful of guardrails that a script enforces rather than a convention.
 
-> **[TO BE REPLACED — run `/bootstrap-spec`]** Once you start a real service from this
+> **[TO BE REPLACED]** Once you start a real service from this
 > template, replace this section with what *your* service does and who calls it.
 
 ---
@@ -52,16 +52,15 @@ Without Docker: `make run`, then the same `curl`s.
    every other target is a plain `go ...` or `docker ...` command you can type directly.
    Both implementations end with the same post-condition: zero remaining occurrence of
    the old name, or they fail. A half-renamed repository is not a possible outcome.
-3. `/bootstrap-spec "what your service does"` — a few questions, then three sentences of
-   context and **the first slice** in `docs/SPEC.md`. Deliberately minimal: no ADR
-   backlog, no full slice list, no critique. Everything else accretes as slices get
-   built, because a specification is worth what you already know and at hour zero you
-   know least.
-4. `/plan-work "<the first slice>"` — this is where the open questions, the split and the
-   `tech-lead` critique happen, against the code as it actually is.
+3. **Write `docs/SPEC.md` §1 and §6 yourself** — three sentences of context, and the
+   first slice with a falsifiable *Definition of done*. By hand, not by interview: you
+   write them faster than an agent can ask you for them, and writing them is what makes
+   you hold the model of the system the agents downstream work from. Everything else
+   accretes as slices get built.
+4. `/critique` — `tech-lead` attacks that plan before any code exists.
 5. `make check` — must be green before you write a line of your own.
 
-Then, for each unit of work: `/plan-work` → implement → `/review` → `/open-pr`.
+Then, for each slice: write the plan → `/critique` → implement → `/review` → `/open-pr`.
 
 ## Requirements
 
@@ -86,13 +85,11 @@ Then, for each unit of work: `/plan-work` → implement → `/review` → `/open
 ### The daily loop
 
 ```
-/plan-work "<need>"     once per need, in plan mode
-    ↓                   asks the open questions, splits into PR-sized slices,
-                        drafts the ADR of any structural decision,
-                        then tech-lead critiques the plan
-implement one slice      go-developer + go-test-writer
-/review                  panel of 4 agents in parallel, strictest verdict wins
-/open-pr                 you review, you merge
+write the plan            in plan mode: the slices, their out-of-scope, their DoD
+/critique                 tech-lead attacks it — a reader who did not write it
+implement one slice       go-developer + go-test-writer
+/review                   panel of 4 agents in parallel, strictest verdict wins
+/open-pr                  you review, you merge
     ↺ next slice
 ```
 

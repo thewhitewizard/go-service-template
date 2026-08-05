@@ -13,9 +13,10 @@ decision *now* rather than later?
 
 The decision taken, in one or two affirmative sentences.
 
-> Left empty by `/plan-work` and `/bootstrap-spec` on purpose: an agent drafts the
-> options, the architect decides. Fill this in, then set `Status: Accepted`. A slice
-> whose governing ADR is still `Proposed` is not implementable.
+> You write this file, so there is no gate to perform here: fill the decision in and set
+> `Status: Accepted`. Leave it `Proposed` only while you are genuinely undecided — a slice
+> whose governing ADR is still `Proposed` is not implementable, and that is the only thing
+> the status is for.
 
 ## Options considered
 
