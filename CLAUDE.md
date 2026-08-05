@@ -43,6 +43,16 @@
 - **Codified rituals**: you write the plan in plan mode, then `/critique` has `tech-lead`
   attack it before any code; `/review` runs the panel on the diff; `/open-pr` opens the PR
   (never an ad-hoc `gh pr create`).
+- **Run `/critique` before `ExitPlanMode`**, on any plan that will produce code. Not after
+  approval, not on request — before the plan is presented, as the last step of writing it.
+
+  This rule lives here rather than inside `/critique` for a reason: a skill's instructions
+  only apply once the skill is invoked, so "run me before presenting the plan" written inside
+  it is circular and never fires. The observable symptom is having to **reject your own plan**
+  to get it critiqued, which is absurd enough that it stops happening.
+
+  Report the verdict alongside the plan so the approval decision is made with the findings in
+  hand. On `[LEAD]: BLOCKING`, present the corrected plan rather than the original plus a list.
 
 ## Layering — non-negotiable
 
