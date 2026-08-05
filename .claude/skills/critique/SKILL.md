@@ -41,11 +41,23 @@ Give the verdict line and the findings, sorted by severity, unchanged. On
 `[LEAD]: BLOCKING`, propose the corrected plan rather than handing back a list — the problem
 is already diagnosed, and arbitrating it again is work the user does not need to do twice.
 
-**Do not apply the corrections to any file.** The plan is the user's; so is the decision to
-change it.
+**The user decides each disposition, one by one — taken, declined, or extended.** Do not
+settle them yourself, and treat a declined finding as an answer rather than a disagreement to
+re-argue: he holds context the plan does not carry.
 
-If `tech-lead` says the plan is fine, say that in one line. A critic whose verdict is always
-BLOCKING stops carrying information, and so does a skill that reports one.
+**Then rewrite the plan file with the dispositions that were taken, and say in one line that
+you did.** Both halves matter:
+
+- *Rewrite it.* In plan mode the plan file is the only writable artefact, so it is where the
+  agreed state belongs. Leaving corrections in the conversation while the file keeps the old
+  plan is how someone implements from a stale document — and the file is what he will read
+  tomorrow, not this exchange.
+- *Say so.* Otherwise there is no way to tell a rewritten plan from a reported one without
+  grepping for a marker that should have changed. If the answer to "was the plan updated?" is
+  not visible, the step is not finished.
+
+If `tech-lead` says the plan is fine, say that in one line and rewrite nothing. A critic whose
+verdict is always BLOCKING stops carrying information, and so does a skill that reports one.
 
 ## 4. When a finding says a decision is untracked
 
@@ -71,11 +83,30 @@ When the plan claims a slice fits under the 400-line cap, `tech-lead` will check
 is the check that misses most often, always in the same direction. Three estimates in a row
 came in at about 2.5× their figure.
 
-The cause is arithmetic, not judgement. Comment density here runs 25–40%, and production and
-test lines come out near 1:1. So **N lines of actual logic land as roughly 2.8 N added
-lines**: 130 lines of logic is already a 365-line diff. Estimating the logic instead of the
-diff undershoots by exactly that factor.
+The cause is arithmetic, and **it depends entirely on which quantity was estimated.** Two
+different numbers are in play, and applying the wrong multiplier to the wrong one produces
+nonsense in either direction:
 
-The reliable calibration is your own merged PRs — `git log --oneline -20`, then
-`git show --stat <sha>` on one of comparable scope. In a fresh repository there are none, and
-the 2.8 multiplier is the fallback.
+- **A — production logic lines**: what you will actually write, excluding comments, blank
+  lines and tests.
+- **B — added lines in the diff**: what `git diff --numstat -- '*.go'` counts. Comments and
+  tests included. This is the number the 400 cap applies to.
+
+In this repository comment density runs 25–40% on production files, so a production *file* is
+about `1.4 A`; and production:test file lines come out near 1:1. Hence:
+
+> **B ≈ 2.8 A.** 130 lines of logic is already a 365-line diff.
+
+**Apply 2.8 only to A.** If the estimate is already expressed in added lines — a table with
+`prod` and `test` columns is B, not A — then 2.8 does not apply, and multiplying by it again
+inflates the figure by nearly threefold.
+
+For an estimate already made in B, there is no clean multiplier, only observed drift: in this
+codebase, estimates expressed directly in added lines have come in **1.5× to 2.5× low**, every
+time, without exception. Treat such an estimate as a **floor**, not a figure — and say which
+of A or B you estimated, so the next reader knows which correction applies.
+
+The only reliable calibration is measurement: `git log --oneline -20`, then
+`git show --stat <sha>` on a merged PR of comparable scope. In a fresh repository there are
+none, so the arithmetic above is the fallback and the real count before `/open-pr` is what
+settles it.

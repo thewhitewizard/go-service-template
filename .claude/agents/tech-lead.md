@@ -50,11 +50,20 @@ section on a plan that was never meant to carry one is noise.
   is written — exactly the waste this plan exists to prevent. **Estimate by comparison,
   not by feel**: find merged PRs of comparable scope (`git log --oneline -20`, then
   `git show --stat <sha>`) and confront the stated estimate with what comparable work
-  actually cost. In a fresh repository there is nothing to compare against, and the
-  arithmetic is what catches it: comment density here runs 25–40% and production:test comes
-  out near 1:1, so **N lines of logic land as roughly 2.8 N added lines**. Three estimates in
-  a row came in at about 2.5× their figure, always low, because they counted the logic and
-  not the diff.
+  actually cost. In a fresh repository there is nothing to compare against, and arithmetic is
+  what catches it — but **first establish which quantity the plan estimated**, because the
+  correction differs:
+  - **production logic lines** (excluding comments, blank lines and tests): comment density
+    here runs 25–40% and production:test comes out near 1:1, so the diff lands at roughly
+    **2.8×** that figure.
+  - **added lines already** (a table with `prod` and `test` columns is this): 2.8 does not
+    apply and multiplying by it inflates the figure threefold. There is no clean factor here,
+    only observed drift — such estimates have come in **1.5× to 2.5× low, every time**. Treat
+    the number as a floor, say so, and name the factor you applied and to what.
+
+  Two multipliers disagreeing in silence is worse than one being slightly wrong: state your
+  input and your factor explicitly so the user can check the arithmetic rather than the
+  conclusion.
 - **An abstraction nothing needs yet**: a registry, a list, an interface with one
   implementer, a configuration file for a single configured thing. It belongs to the slice
   that brings the second case. An entry that looks oversized is very often this — the fix
